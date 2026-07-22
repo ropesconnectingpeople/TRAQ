@@ -878,7 +878,7 @@ async function getGPS(){
     done();
   },()=>{ toast('GPS access denied','err'); done(); },{timeout:10000});
 }
-const W3W_KEY = (typeof localStorage!=='undefined' && localStorage.getItem('w3w_key')) || '4V24Y3Y9';
+const W3W_KEY = (typeof localStorage!=='undefined' && localStorage.getItem('w3w_key')) || 'T9ZZL4A8';
 async function getW3W(){
   const btn=$('w3wBtn');
   if(!navigator.geolocation){ toast('GPS not available','err'); return; }
