@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tree Risk Assessment</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TRAQ">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1D9E75">
+<style>
+:root{
+  --gr:#1D9E75;--grd:#0F6E56;--grl:#5DCAA5;
+  --grbg:rgba(29,158,117,.12);
+  --grad:linear-gradient(135deg,#22AC80 0%,#158765 100%);
+  --bg:#F2F5F3;--cb:#ffffff;--cb2:#F3F5F4;--cbr:#E5EAE7;--cbr2:#CFD8D3;
+  --ct:#101828;--ct2:#68746E;--ok-t:#0F6E56;
+  --err-bg:rgba(226,75,74,.12);--err-t:#B03231;
+  --warn-bg:rgba(239,159,39,.14);--warn-t:#8A5410;
+  --low:#1D9E75;--mod:#E8A814;--high:#E86A17;--extreme:#D23B3B;
+  --rm:10px;--rl:16px;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 20px rgba(16,24,40,.05);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0C120F;--cb:#161D1A;--cb2:#1F2723;--cbr:#2A332E;--cbr2:#3B463F;
+    --ct:#ECF1EE;--ct2:#97A39C;--ok-t:#6ED2AC;--err-t:#F09B9A;--warn-t:#F2BE70;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25)
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ct);min-height:100vh;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.wrap{max-width:680px;margin:0 auto;padding:0 1rem 4rem}
+/* Header */
+.app-header{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:100;margin:0 -1rem 1rem;padding:calc(env(safe-area-inset-top) + .75rem) 1rem .75rem;background:color-mix(in srgb,var(--cb) 82%,transparent);-webkit-backdrop-filter:saturate(180%) blur(16px);backdrop-filter:saturate(180%) blur(16px);border-bottom:1px solid var(--cbr)}
+.ah-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.ah-logo{width:38px;height:38px;border-radius:11px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 3px 10px rgba(29,158,117,.35)}
+.ah-title{font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--ct);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ah-sub{font-size:11px;color:var(--ct2);margin-top:1px}
+.cnt{background:var(--gr);color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center}
+/* Progress */
+.pbar{display:flex;gap:4px;margin-bottom:1rem}
+.pbar .s{flex:1;height:5px;border-radius:3px;background:var(--cbr);transition:background .3s}
+.pbar .s.done{background:var(--gr)}
+.pbar .s.active{background:var(--grad)}
+/* Sections */
+.sec{display:none}
+.sec.active{display:block;background:var(--cb);border:1px solid var(--cbr);border-radius:var(--rl);padding:1.25rem 1rem 1.375rem;box-shadow:var(--shadow);animation:secIn .28s ease}
+@keyframes secIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sh{margin-bottom:1.125rem}
+.sh h2{font-size:19px;font-weight:700;letter-spacing:-.01em;color:var(--ct);margin-bottom:3px;display:flex;align-items:center;gap:10px}
+.sh h2 i{width:34px;height:34px;border-radius:10px;background:var(--grbg);color:var(--gr);display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;font-style:normal}
+.sh p{font-size:13px;color:var(--ct2);margin-left:44px}
+/* Form elements */
+.fl{font-size:11px;font-weight:600;color:var(--ct2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:block;margin-top:1.125rem}
+.fl:first-child{margin-top:0}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{width:100%;padding:12px 14px;font-size:16px;border:1.5px solid transparent;border-radius:12px;background:var(--cb2);color:var(--ct);font-family:var(--font);transition:border-color .15s,background .15s;-webkit-appearance:none;appearance:none;min-height:46px}
+input::placeholder,textarea::placeholder{color:var(--cbr2)}
+input:focus,select:focus,textarea:focus{outline:none;background:var(--cb);border-color:var(--gr);box-shadow:0 0 0 3px var(--grbg)}
+textarea{resize:vertical;min-height:76px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:480px){.r2,.r3{grid-template-columns:1fr}}
+/* Check pills */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+@media (max-width:400px){.cg{grid-template-columns:1fr}}
+.ci{display:flex;align-items:center;gap:9px;padding:11px 12px;border:1.5px solid transparent;border-radius:12px;background:var(--cb2);cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.ci:active{transform:scale(.98)}
+.ci:hover{border-color:var(--grl)}
+.ci.on{border-color:var(--gr);background:var(--grbg)}
+.cbox{width:20px;height:20px;border:1.5px solid var(--cbr2);border-radius:7px;background:var(--cb);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.ci.on .cbox{background:var(--gr);border-color:var(--gr)}
+.cicon{color:#fff;font-size:12px;display:none;font-style:normal}
+.ci.on .cicon{display:block}
+.clbl{font-size:14px;color:var(--ct);line-height:1.3;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ci.on .clbl{font-weight:600;color:var(--ok-t)}
+.mini{width:64px;padding:5px 7px;border:1px solid var(--cbr);border-radius:8px;font-size:13px;background:var(--cb);color:var(--ct);font-family:var(--font);min-height:0}
+.mini.w{width:96px}
+.mini:focus{outline:none;border-color:var(--gr)}
+/* Chip radios */
+.rg{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.ri{display:flex;align-items:center;gap:6px;padding:9px 16px;border:1.5px solid transparent;border-radius:999px;background:var(--cb2);cursor:pointer;transition:all .15s;user-select:none;font-size:14px;color:var(--ct);-webkit-tap-highlight-color:transparent}
+.ri:hover{border-color:var(--grl)}
+.ri.sel{border-color:var(--gr);background:var(--grbg);color:var(--ok-t);font-weight:600}
+/* risk-colored chips when selected */
+.ri.sel[data-risk=low]{border-color:var(--low);background:rgba(29,158,117,.14);color:var(--ok-t)}
+.ri.sel[data-risk=moderate]{border-color:var(--mod);background:var(--warn-bg);color:var(--warn-t)}
+.ri.sel[data-risk=high]{border-color:var(--high);background:rgba(232,106,23,.14);color:#9A4A10}
+.ri.sel[data-risk=extreme]{border-color:var(--extreme);background:var(--err-bg);color:var(--err-t)}
+@media (prefers-color-scheme:dark){.ri.sel[data-risk=high]{color:#F2A470}}
+/* Badges */
+.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:5px 14px;font-size:13px;font-weight:700;color:#fff;background:var(--cbr2);min-width:96px}
+.badge.v-low{background:var(--low)}.badge.v-moderate{background:var(--mod)}
+.badge.v-high{background:var(--high)}.badge.v-extreme{background:var(--extreme)}
+.calcrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--grbg);border-radius:12px;font-size:13px;font-weight:600;color:var(--ok-t)}
+/* Risk / target cards */
+.tcard{border:1.5px solid var(--cbr);border-radius:14px;padding:12px;margin-top:10px;background:var(--cb)}
+.tcard h4{font-size:13px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+/* Matrix */
+.matrixwrap{overflow-x:auto;margin-top:10px}
+table.matrix{border-collapse:collapse;font-size:11px;width:100%;min-width:420px}
+table.matrix th,table.matrix td{border:1px solid var(--cbr);padding:5px 6px;text-align:center}
+table.matrix th{background:var(--grbg);color:var(--gr)}
+table.matrix td.v-low{background:rgba(29,158,117,.15)}table.matrix td.v-moderate{background:rgba(232,168,20,.15)}
+table.matrix td.v-high{background:rgba(232,106,23,.15)}table.matrix td.v-extreme{background:rgba(210,59,59,.15)}
+table.matrix td.hl{outline:3px solid var(--gr);outline-offset:-3px;font-weight:700}
+/* Nav */
+.navrow{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;bottom:0;z-index:90;margin:1rem -1rem 0;padding:.75rem 1rem calc(env(safe-area-inset-bottom) + .75rem);background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:saturate(180%) blur(16px);backdrop-filter:saturate(180%) blur(16px);border-top:1px solid var(--cbr)}
+#stepLbl{flex-shrink:0;font-size:11px;color:var(--ct2)}
+#btnNext{flex:1;max-width:200px;justify-content:center;padding:13px 18px;font-size:15px}
+#btnBack{padding:13px 16px}
+.btn{padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;border:1px solid var(--cbr);background:var(--cb);color:var(--ct);transition:all .15s;display:inline-flex;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent}
+.btn:active{transform:scale(.97)}
+.btn:hover{background:var(--cb2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-g{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(29,158,117,.35)}
+.btn-g:hover{filter:brightness(1.05)}
+.btn-r{background:var(--err-bg);border-color:transparent;color:var(--err-t)}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.actrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.actrow .btn{flex:1;justify-content:center;padding:13px 12px;font-size:15px}
+/* Summary */
+.sc{background:var(--cb2);border-radius:14px;padding:.875rem 1rem;margin-bottom:.625rem}
+.sr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--cbr)}
+.sr:last-child{border-bottom:none}
+.sk{color:var(--ct2)}
+.sv{color:var(--ct);font-weight:600;text-align:right;max-width:60%}
+.st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ct2);margin:1.125rem 0 6px}
+.sb{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid transparent}
+.sb-low{background:var(--grbg);color:var(--ok-t);border-color:var(--grl)}
+.sb-moderate{background:var(--warn-bg);color:var(--warn-t);border-color:#FAC775}
+.sb-high{background:rgba(232,106,23,.14);color:#9A4A10;border-color:#F0A470}
+.sb-extreme{background:var(--err-bg);color:var(--err-t);border-color:#F09595}
+/* Photos */
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:10px}
+.pt{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--cbr);box-shadow:var(--shadow)}
+.pt img{width:100%;height:100%;object-fit:cover}
+.pdel{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pcap{font-size:12px;padding:6px 8px;background:var(--cb2);color:var(--ct2);border:1px solid transparent;border-radius:8px;width:100%;margin-top:4px;font-family:var(--font)}
+.ua{border:2px dashed var(--grl);border-radius:var(--rl);background:var(--grbg);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .15s;color:var(--ok-t)}
+.ua:hover{border-color:var(--gr);filter:brightness(1.02)}
+/* Saved list */
+.acard{background:var(--cb);border:1px solid var(--cbr);border-radius:var(--rl);padding:1rem;margin-bottom:.625rem;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.acinfo{flex:1;min-width:0}
+.act{font-size:15px;font-weight:600;color:var(--ct);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs{font-size:12px;color:var(--ct2);margin-top:2px}
+.acbtns{display:flex;gap:6px;flex-shrink:0}
+/* Toast */
+.ta{min-height:0}
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 72px);left:50%;transform:translateX(-50%) translateY(-8px);z-index:300;display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid transparent;box-shadow:0 8px 30px rgba(16,24,40,.18);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap;max-width:92vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.tok{background:var(--grd);color:#fff}
+.terr{background:#B03231;color:#fff}
+.empty{color:var(--ct2);font-size:14px;text-align:center;padding:3rem 0;line-height:2}
+.empty i{font-size:40px;font-style:normal}
+/* Signature */
+.sig-wrap{border:1.5px dashed var(--cbr2);border-radius:12px;background:var(--cb2);overflow:hidden;position:relative;margin-top:6px}
+.sig-wrap canvas{display:block;width:100%;touch-action:none}
+.sig-clear{position:absolute;top:8px;right:8px;background:var(--cb);border:1px solid var(--cbr);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;color:var(--ct2);font-family:var(--font)}
+.sig-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--cbr2);pointer-events:none;white-space:nowrap}
+/* Autocomplete */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--cb);border:1px solid var(--cbr);border-radius:12px;z-index:50;box-shadow:0 10px 34px rgba(16,24,40,.16);max-height:220px;overflow-y:auto;overflow-x:hidden;display:none}
+.ac-list.show{display:block}
+.ac-item{padding:11px 13px;font-size:13px;cursor:pointer;color:var(--ct);border-bottom:1px solid var(--cbr)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:var(--cb2)}
+/* Dopamin overlay */
+.dopamin{position:fixed;inset:0;background:rgba(15,110,86,.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity .4s}
+.dopamin.show{opacity:1;pointer-events:all}
+.dopamin-tree{font-size:80px;margin-bottom:1rem;animation:treePop .5s ease}
+.dopamin-text{color:#fff;font-size:1.25rem;font-weight:700;text-align:center;line-height:1.5;max-width:300px}
+.dopamin-sub{color:rgba(255,255,255,.7);font-size:13px;margin-top:8px}
+@keyframes treePop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+/* Print */
+#printDoc{display:none}
+@media print{
+  body{background:#fff}
+  .wrap,.dopamin,.toast{display:none!important}
+  #printDoc{display:block;font-size:11px;color:#000;font-family:var(--font)}
+  #printDoc h1{font-size:16px;margin-bottom:2px}
+  #printDoc .pd-sub{font-size:10px;color:#555;margin-bottom:10px}
+  #printDoc h3{font-size:12px;margin:10px 0 4px;padding-bottom:2px;border-bottom:1px solid #999}
+  #printDoc table{border-collapse:collapse;width:100%;font-size:10px}
+  #printDoc td,#printDoc th{border:1px solid #aaa;padding:3px 5px;text-align:left;vertical-align:top}
+  #printDoc th{background:#eef5f1}
+  #printDoc .pd-kv{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 14px;font-size:10px}
+  #printDoc .pd-kv div b{color:#333}
+  #printDoc .pd-tags{font-size:10px;line-height:1.7}
+  #printDoc .pd-tag{display:inline-block;border:1px solid #999;border-radius:99px;padding:0 7px;margin:1px 2px 1px 0}
+  #printDoc .pd-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  #printDoc .pd-photos figure{break-inside:avoid;margin:0}
+  #printDoc .pd-photos img{width:100%;height:150px;object-fit:cover;border:1px solid #999;border-radius:4px}
+  #printDoc .pd-photos figcaption{font-size:9px;color:#444;margin-top:2px}
+  #printDoc .pd-risk{font-weight:700;border:2px solid #000;display:inline-block;padding:4px 16px;border-radius:99px;margin-top:4px}
+  #printDoc .pd-sig img{height:60px;margin-top:4px}
+  #printDoc .pd-block{break-inside:avoid;margin-bottom:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- Success overlay -->
+<div class="dopamin" id="dopamin" onclick="hideDopamin()">
+  <div class="dopamin-tree">🌳</div>
+  <div class="dopamin-text">Thank you. You're making our industry a little safer.</div>
+  <div class="dopamin-sub">Tap to continue</div>
+</div>
+
+<div class="wrap">
+  <div class="app-header">
+    <div class="ah-brand">
+      <div class="ah-logo">🌳</div>
+      <div style="min-width:0">
+        <div class="ah-title">Tree Risk Assessment</div>
+        <div class="ah-sub">Based on the ISA TRAQ Basic Form</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn" id="modeBtn" onclick="toggleMode()">🗂 Archive <span class="cnt" id="savedCount">0</span></button>
+    </div>
+  </div>
+  <div class="ta"><div class="toast" id="toast"></div></div>
+
+  <div id="listView" style="display:none">
+    <div id="savedListBox">
+      <div class="empty"><i>🌲</i><br>No assessments saved yet.</div>
+    </div>
+    <div style="margin-top:.875rem">
+      <button class="btn btn-g" onclick="newAssessment()">＋ New assessment</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <div class="pbar" id="pb"></div>
+
+    <div class="sec active" id="s0">
+      <div class="sh"><h2><i>📍</i> Job site</h2><p>Basic information about the assignment</p></div>
+      <div id="c0"></div>
+    </div>
+
+    <div class="sec" id="s1">
+      <div class="sh"><h2><i>🌳</i> Tree &amp; targets</h2><p>Tree data and target assessment</p></div>
+      <div id="c1"></div>
+    </div>
+
+    <div class="sec" id="s2">
+      <div class="sh"><h2><i>⛰</i> Site factors</h2><p>History, topography, soil, wind &amp; weather</p></div>
+      <div id="c2"></div>
+    </div>
+
+    <div class="sec" id="s3">
+      <div class="sh"><h2><i>🍃</i> Health &amp; load</h2><p>Tree health, species profile and load factors</p></div>
+      <div id="c3"></div>
+    </div>
+
+    <div class="sec" id="s4">
+      <div class="sh"><h2><i>🌿</i> Crown &amp; branches</h2><p>Defects and conditions affecting failure</p></div>
+      <div id="c4"></div>
+    </div>
+
+    <div class="sec" id="s5">
+      <div class="sh"><h2><i>🪵</i> Trunk</h2><p>Defects and conditions affecting failure</p></div>
+      <div id="c5"></div>
+    </div>
+
+    <div class="sec" id="s6">
+      <div class="sh"><h2><i>🌱</i> Roots &amp; root collar</h2><p>Defects and conditions affecting failure</p></div>
+      <div id="c6"></div>
+    </div>
+
+    <div class="sec" id="s7">
+      <div class="sh"><h2><i>⚠️</i> Risk categorization</h2><p>Likelihood × consequences per tree part</p></div>
+      <div id="c7"></div>
+    </div>
+
+    <div class="sec" id="s8">
+      <div class="sh"><h2><i>🛠</i> Mitigation &amp; conclusions</h2><p>Actions, residual risk and recommendations</p></div>
+      <div id="c8"></div>
+    </div>
+
+    <div class="sec" id="s9">
+      <div class="sh"><h2><i>📷</i> Photos</h2><p>Add photos to the assessment</p></div>
+      <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
+      <div class="ua" onclick="document.getElementById('photoInput').click()">
+        <div style="font-size:26px;margin-bottom:6px">📸</div>
+        <div style="font-size:13px;font-weight:500;color:var(--ct)">Add photos</div>
+        <div style="font-size:11px;margin-top:3px">Camera or gallery · multiple at once</div>
+      </div>
+      <div class="pg" id="photoGrid"></div>
+    </div>
+
+    <div class="sec" id="s10">
+      <div class="sh"><h2><i>✅</i> Summary</h2><p>Review and finish</p></div>
+      <div id="summaryContent"></div>
+      <label class="fl">Assessor (name)</label>
+      <input type="text" id="verantwortlicher" placeholder="Name">
+      <label class="fl">Signature</label>
+      <div class="sig-wrap">
+        <canvas id="sigCanvas" height="120"></canvas>
+        <span class="sig-hint" id="sigHint">Sign here ✍️</span>
+        <button class="sig-clear" onclick="clearSig()">Clear</button>
+      </div>
+      <div style="font-size:11px;color:var(--ct2);padding:8px 10px;background:var(--cb2);border-radius:var(--rm);line-height:1.6;margin-top:8px">
+        This assessment reflects the conditions found at the time of inspection using the TRAQ Basic methodology. It is a snapshot in time and does not guarantee against tree failure.
+      </div>
+      <div class="actrow">
+        <button class="btn btn-g" onclick="saveAssessment()">💾 Save</button>
+        <button class="btn" onclick="exportPDF()">📄 PDF</button>
+        <button class="btn" onclick="shareAssessment()">📤 Share</button>
+      </div>
+    </div>
+
+    <div class="navrow">
+      <button class="btn" id="btnBack" onclick="nav(-1)" disabled>← Back</button>
+      <span id="stepLbl">Step 1 of 11</span>
+      <button class="btn btn-g" id="btnNext" onclick="nav(1)">Next →</button>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;padding-top:1rem;border-top:.5px solid var(--cbr);font-size:11px;color:var(--ct2);line-height:1.8">
+    <div style="font-weight:600;color:var(--ct);margin-bottom:4px">Josua Hundertmark</div>
+    <a href="mailto:hey@ropesconnectingpeople.com" style="color:var(--ct2);text-decoration:none">hey@ropesconnectingpeople.com</a><br>
+    <a href="https://instagram.com/ropesconnectingpeople" target="_blank" style="color:var(--ct2);text-decoration:none">@ropesconnectingpeople</a>
+    <div style="margin-top:6px">Not an official ISA product. Based on the publicly documented TRAQ Basic methodology. Always rely on your own professional judgment.</div>
+  </div>
+</div>
+
+<div id="printDoc"></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const STEPS = 11;
+let step = 0, photos = [], editId = null, toastT, osmT, sigDirty = false, unit = 'imperial';
+
+/* ---------- option/label config ---------- */
+const LOF = [['improbable','Improbable'],['possible','Possible'],['probable','Probable'],['imminent','Imminent']];
+const LOI = [['veryLow','Very low'],['low','Low'],['medium','Medium'],['high','High']];
+const CONS = [['negligible','Negligible'],['minor','Minor'],['significant','Significant'],['severe','Severe']];
+const COMB = {unlikely:'Unlikely', somewhat:'Somewhat likely', likely:'Likely', veryLikely:'Very likely'};
+const RISK = {low:'Low', moderate:'Moderate', high:'High', extreme:'Extreme'};
+const RISK_ORDER = ['low','moderate','high','extreme'];
+const M1 = {
+  imminent:{veryLow:'unlikely',low:'somewhat',medium:'likely',high:'veryLikely'},
+  probable:{veryLow:'unlikely',low:'unlikely',medium:'somewhat',high:'likely'},
+  possible:{veryLow:'unlikely',low:'unlikely',medium:'unlikely',high:'somewhat'},
+  improbable:{veryLow:'unlikely',low:'unlikely',medium:'unlikely',high:'unlikely'}};
+const M2 = {
+  veryLikely:{negligible:'low',minor:'moderate',significant:'high',severe:'extreme'},
+  likely:{negligible:'low',minor:'moderate',significant:'high',severe:'high'},
+  somewhat:{negligible:'low',minor:'low',significant:'moderate',severe:'moderate'},
+  unlikely:{negligible:'low',minor:'low',significant:'low',severe:'low'}};
+const UNITS = {imperial:{dbh:'in',ht:'ft',dist:'ft'}, metric:{dbh:'cm',ht:'m',dist:'m'}};
+
+/* ---------- html helpers ---------- */
+function ci(key,label,minis){
+  return `<div class="ci" data-key="${key}" onclick="tc(this,event)"><div class="cbox"><i class="cicon">✓</i></div><span class="clbl">${label}${minis||''}</span></div>`;
+}
+function mini(id,ph,w){ return ` <input class="mini${w?' w':''}" id="${id}" placeholder="${ph}" onclick="event.stopPropagation()" oninput="draft()">`; }
+function rg(name,opts,riskAttr){
+  return `<div class="rg">`+opts.map(o=>`<div class="ri" data-name="${name}" data-v="${o[0]}"${riskAttr?` data-risk="${o[0]}"`:''} onclick="rsel(this)">${o[1]}</div>`).join('')+`</div>`;
+}
+const YN = [['yes','Yes'],['no','No']];
+
+/* ---------- step content ---------- */
+function buildSteps(){
+  $('pb').innerHTML = Array.from({length:STEPS},(_,i)=>`<div class="s${i===0?' active':''}" id="p${i}"></div>`).join('');
+
+  $('c0').innerHTML = `
+    <div class="r2">
+      <div><label class="fl">Client</label><input type="text" id="client" placeholder="e.g. City of Springfield"></div>
+      <div><label class="fl">Date</label><input type="date" id="datum"></div>
+    </div>
+    <label class="fl">Address / tree location</label>
+    <div class="ac-wrap">
+      <div style="display:flex;gap:6px">
+        <input type="text" id="address" placeholder="e.g. Central Park, main path" autocomplete="off" oninput="osmSearch(this.value)" style="flex:1">
+        <button class="btn" id="gpsBtn" onclick="getGPS()" title="Use my location" style="flex-shrink:0;padding:7px 10px">📡 GPS</button>
+      </div>
+      <div class="ac-list" id="ac-list"></div>
+    </div>
+    <div class="r2" style="margin-top:.75rem">
+      <div><label class="fl">Time</label><input type="time" id="zeit"></div>
+      <div><label class="fl">Time frame</label><input type="text" id="timeframe" placeholder="e.g. 3 years"></div>
+    </div>
+    <div class="r2" style="margin-top:.75rem">
+      <div><label class="fl">Assessor(s)</label><input type="text" id="assessor" placeholder="Name(s)"></div>
+      <div><label class="fl">Sheet</label><div style="display:flex;gap:6px;align-items:center"><input type="text" id="sheet" placeholder="1" style="width:70px"> <span style="color:var(--ct2);font-size:13px">of</span> <input type="text" id="sheetOf" placeholder="1" style="width:70px"></div></div>
+    </div>
+    <label class="fl">Tools used</label>
+    <input type="text" id="tools" placeholder="e.g. mallet, probe, binoculars">`;
+
+  const targetCard = i => `
+    <div class="tcard">
+      <h4>Target ${i}</h4>
+      <input type="text" id="t${i}_desc" placeholder="Target description (people, property, traffic …)">
+      <label class="fl">Target zone</label>
+      ${rg('t'+i+'_zone',[['dripline','Within drip line'],['1x','Within 1× height'],['1_5x','Within 1.5× height']])}
+      <label class="fl">Occupancy rate</label>
+      ${rg('t'+i+'_occ',[['rare','1 – Rare'],['occasional','2 – Occasional'],['frequent','3 – Frequent'],['constant','4 – Constant']])}
+      <div class="r2" style="margin-top:.75rem">
+        <div><label class="fl" style="margin-top:0">Practical to move target?</label>${rg('t'+i+'_move',YN)}</div>
+        <div><label class="fl" style="margin-top:0">Restriction practical?</label>${rg('t'+i+'_restrict',YN)}</div>
+      </div>
+    </div>`;
+
+  $('c1').innerHTML = `
+    <label class="fl">Units</label>
+    ${rg('unitSys',[['imperial','Imperial (in / ft)'],['metric','Metric (cm / m)']])}
+    <div class="r2" style="margin-top:.75rem">
+      <div><label class="fl">Tree species</label><input type="text" id="species" placeholder="e.g. Quercus rubra"></div>
+      <div><label class="fl">Tree #</label><input type="text" id="treeNo" placeholder="e.g. 17"></div>
+    </div>
+    <div class="r3" style="margin-top:.75rem">
+      <div><label class="fl">DBH (<span data-unit="dbh"></span>)</label><input type="text" id="dbh" inputmode="decimal" placeholder="e.g. 24"></div>
+      <div><label class="fl">Height (<span data-unit="ht"></span>)</label><input type="text" id="height" inputmode="decimal" placeholder="e.g. 60"></div>
+      <div><label class="fl">Crown spread (<span data-unit="ht"></span>)</label><input type="text" id="crown" inputmode="decimal" placeholder="e.g. 40"></div>
+    </div>
+    ${[1,2,3,4].map(targetCard).join('')}`;
+
+  $('c2').innerHTML = `
+    <label class="fl">History of failures</label>
+    <input type="text" id="history" placeholder="Previous failures, if known">
+    <label class="fl">Topography</label>
+    <div class="cg">
+      ${ci('topoFlat','Flat')}
+      ${ci('topoSlope','Slope',mini('slopePct','%'))}
+      ${ci('topoAspect','Aspect',mini('aspect','e.g. SW'))}
+    </div>
+    <label class="fl">Site changes</label>
+    <div class="cg">
+      ${ci('scNone','None')}${ci('scGrade','Grade change')}${ci('scClearing','Site clearing')}
+      ${ci('scHydro','Changed hydrology')}${ci('scRootCuts','Root cuts')}
+    </div>
+    <input type="text" id="scDesc" placeholder="Describe…" style="margin-top:8px">
+    <label class="fl">Soil conditions</label>
+    <div class="cg">
+      ${ci('soilLimited','Limited volume')}${ci('soilSaturated','Saturated')}${ci('soilShallow','Shallow')}
+      ${ci('soilCompacted','Compacted')}${ci('soilPavement','Pavement over roots',mini('pavementPct','%'))}
+    </div>
+    <input type="text" id="soilDesc" placeholder="Describe…" style="margin-top:8px">
+    <label class="fl">Prevailing wind direction</label>
+    <input type="text" id="windDir" placeholder="e.g. SW">
+    <label class="fl">Common weather</label>
+    <div class="cg">
+      ${ci('wxWind','Strong winds')}${ci('wxIce','Ice')}${ci('wxSnow','Snow')}${ci('wxRain','Heavy rain')}
+    </div>
+    <input type="text" id="wxDesc" placeholder="Describe…" style="margin-top:8px">`;
+
+  $('c3').innerHTML = `
+    <label class="fl">Vigor</label>
+    ${rg('vigor',[['low','Low'],['normal','Normal'],['high','High']])}
+    <label class="fl">Foliage</label>
+    <div class="cg">
+      ${ci('folNoneSeason','None (seasonal)')}${ci('folNoneDead','None (dead)')}
+      ${ci('folNormal','Normal',mini('folNormalPct','%'))}
+      ${ci('folChlorotic','Chlorotic',mini('folChloroticPct','%'))}
+      ${ci('folNecrotic','Necrotic',mini('folNecroticPct','%'))}
+    </div>
+    <div class="r2" style="margin-top:.75rem">
+      <div><label class="fl">Pests</label><input type="text" id="pests" placeholder="e.g. borers"></div>
+      <div><label class="fl">Abiotic</label><input type="text" id="abiotic" placeholder="e.g. drought stress"></div>
+    </div>
+    <label class="fl">Species failure profile</label>
+    <div class="cg">
+      ${ci('profBranches','Branches')}${ci('profTrunk','Trunk')}${ci('profRoots','Roots')}
+    </div>
+    <input type="text" id="profDesc" placeholder="Describe…" style="margin-top:8px">
+    <label class="fl">Wind exposure</label>
+    ${rg('windExp',[['protected','Protected'],['partial','Partial'],['full','Full'],['funneling','Wind funneling']])}
+    <label class="fl">Relative crown size</label>
+    ${rg('crownSize',[['small','Small'],['medium','Medium'],['large','Large']])}
+    <label class="fl">Crown density</label>
+    ${rg('crownDensity',[['sparse','Sparse'],['normal','Normal'],['dense','Dense']])}
+    <label class="fl">Interior branches</label>
+    ${rg('interior',[['few','Few'],['normal','Normal'],['dense','Dense']])}
+    <div class="cg" style="margin-top:12px">${ci('vines','Vines / mistletoe / moss')}</div>
+    <label class="fl">Recent or planned change in load factors</label>
+    <input type="text" id="loadChanges" placeholder="Describe…">`;
+
+  const defectFooter = p => `
+    <label class="fl">Main concern(s)</label>
+    <textarea id="${p}_concern" placeholder="Describe the main concern…"></textarea>
+    <label class="fl">Load on defect</label>
+    ${rg(p+'_load',[['na','N/A'],['minor','Minor'],['moderate','Moderate'],['significant','Significant']])}
+    <label class="fl">Likelihood of failure</label>
+    ${rg(p+'_lof',LOF)}`;
+
+  $('c4').innerHTML = `
+    <label class="fl">Conditions</label>
+    <div class="cg">
+      ${ci('b_unbalanced','Unbalanced crown')}
+      ${ci('b_lcr','LCR',mini('b_lcrPct','%'))}
+      ${ci('b_cracks','Cracks')}
+      ${ci('b_lions',"Lion's tailing")}
+      ${ci('b_dead','Dead twigs/branches',mini('b_deadPct','%')+mini('b_deadDia','max dia.'))}
+      ${ci('b_broken','Broken/hanging branches',mini('b_brokenNum','no.')+mini('b_brokenDia','max dia.'))}
+      ${ci('b_overext','Over-extended branches')}
+      ${ci('b_codom','Codominant')}
+      ${ci('b_included','Included bark')}
+      ${ci('b_weak','Weak attachments')}
+      ${ci('b_cavity','Cavity / nest hole',mini('b_cavityPct','% circ.'))}
+      ${ci('b_prevfail','Previous branch failures')}
+      ${ci('b_similar','Similar branches present')}
+      ${ci('b_deadbark','Dead/missing bark')}
+      ${ci('b_cankers','Cankers / galls / burls')}
+      ${ci('b_sapwood','Sapwood damage/decay')}
+      ${ci('b_conks','Conks')}
+      ${ci('b_heart','Heartwood decay')}
+      ${ci('b_response','Response growth')}
+    </div>
+    <label class="fl">Pruning history</label>
+    <div class="cg">
+      ${ci('pr_cleaned','Crown cleaned')}${ci('pr_thinned','Thinned')}${ci('pr_raised','Raised')}
+      ${ci('pr_reduced','Reduced')}${ci('pr_topped','Topped')}${ci('pr_liontailed','Lion-tailed')}
+      ${ci('pr_flush','Flush cuts')}${ci('pr_other','Other',mini('pr_otherTxt','…','w'))}
+    </div>
+    ${defectFooter('b')}`;
+
+  $('c5').innerHTML = `
+    <label class="fl">Conditions</label>
+    <div class="cg">
+      ${ci('tr_deadbark','Dead/missing bark')}
+      ${ci('tr_abnormal','Abnormal bark texture/color')}
+      ${ci('tr_codom','Codominant stems')}
+      ${ci('tr_included','Included bark')}
+      ${ci('tr_cracks','Cracks')}
+      ${ci('tr_sapwood','Sapwood damage/decay')}
+      ${ci('tr_cankers','Cankers / galls / burls')}
+      ${ci('tr_ooze','Sap ooze')}
+      ${ci('tr_lightning','Lightning damage')}
+      ${ci('tr_heart','Heartwood decay')}
+      ${ci('tr_conks','Conks / mushrooms')}
+      ${ci('tr_cavity','Cavity / nest hole',mini('tr_cavityPct','% circ.')+mini('tr_cavityDepth','depth'))}
+      ${ci('tr_taper','Poor taper')}
+      ${ci('tr_lean','Lean',mini('tr_leanDeg','°'))}
+      ${ci('tr_leancorr','Lean corrected')}
+      ${ci('tr_response','Response growth')}
+    </div>
+    ${defectFooter('tr')}`;
+
+  $('c6').innerHTML = `
+    <label class="fl">Conditions</label>
+    <div class="cg">
+      ${ci('r_buried','Collar buried / not visible',mini('r_buriedDepth','depth'))}
+      ${ci('r_girdling','Stem girdling')}
+      ${ci('r_dead','Dead')}
+      ${ci('r_decay','Decay')}
+      ${ci('r_conks','Conks / mushrooms')}
+      ${ci('r_ooze','Ooze')}
+      ${ci('r_cavity','Cavity',mini('r_cavityPct','% circ.'))}
+      ${ci('r_cracks','Cracks')}
+      ${ci('r_cut','Cut/damaged roots',mini('r_cutDist','dist.'))}
+      ${ci('r_lifting','Root plate lifting')}
+      ${ci('r_soilweak','Soil weakness')}
+      ${ci('r_response','Response growth')}
+    </div>
+    ${defectFooter('r')}`;
+
+  const riskCard = i => `
+    <div class="tcard">
+      <h4>Assessment ${i}</h4>
+      <div class="r2">
+        <div><label class="fl" style="margin-top:0">Target #</label><input type="text" id="r${i}_target" placeholder="e.g. 1"></div>
+        <div><label class="fl" style="margin-top:0">Condition of concern</label><input type="text" id="r${i}_cond" placeholder="e.g. dead limb over path"></div>
+      </div>
+      <label class="fl">Tree part</label>
+      ${rg('r'+i+'_part',[['branches','Branches'],['trunk','Trunk'],['roots','Roots/collar'],['whole','Whole tree']])}
+      <label class="fl">Likelihood of failure</label>
+      ${rg('r'+i+'_lof',LOF)}
+      <label class="fl">Likelihood of impact</label>
+      ${rg('r'+i+'_loi',LOI)}
+      <label class="fl">Consequences</label>
+      ${rg('r'+i+'_cons',CONS)}
+      <div class="calcrow">Failure &amp; impact: <span class="badge" id="comb${i}">—</span> Risk rating: <span class="badge" id="risk${i}">—</span></div>
+    </div>`;
+
+  $('c7').innerHTML = [1,2,3,4].map(riskCard).join('') + `
+    <div class="st">Matrix 1 — likelihood (failure × impact)</div>
+    <div class="matrixwrap"><table class="matrix" id="mx1"></table></div>
+    <div class="st">Matrix 2 — risk rating (likelihood × consequences)</div>
+    <div class="matrixwrap"><table class="matrix" id="mx2"></table></div>`;
+
+  const mitCard = i => `
+    <div class="tcard">
+      <h4>Assessment ${i} <span class="badge" id="mrisk${i}" style="margin-left:6px">—</span></h4>
+      <label class="fl" style="margin-top:0">Mitigation</label>
+      <input type="text" id="r${i}_mit" placeholder="e.g. remove dead limb, reduce end weight">
+      <label class="fl">Residual risk</label>
+      ${rg('r'+i+'_res',[['low','Low'],['moderate','Moderate'],['high','High'],['extreme','Extreme']],true)}
+    </div>`;
+
+  $('c8').innerHTML = `
+    <div class="calcrow" style="margin-top:0">Overall tree risk rating: <span class="badge" id="overallBadge">—</span> <span style="font-weight:400;font-size:11px">(auto: highest of assessments)</span></div>
+    <label class="fl">Manual override (optional)</label>
+    ${rg('overallOverride',[['low','Low'],['moderate','Moderate'],['high','High'],['extreme','Extreme']],true)}
+    ${[1,2,3,4].map(mitCard).join('')}
+    <label class="fl">Overall residual risk</label>
+    ${rg('overallRes',[['low','Low'],['moderate','Moderate'],['high','High'],['extreme','Extreme']],true)}
+    <label class="fl">Work priority</label>
+    ${rg('priority',[['1','1 — Immediate'],['2','2'],['3','3'],['4','4 — Low']])}
+    <div class="r2" style="margin-top:.75rem">
+      <div><label class="fl">Recommended inspection interval</label><input type="text" id="interval" placeholder="e.g. 12 months"></div>
+      <div><label class="fl">Data</label>${rg('dataStatus',[['final','Final'],['preliminary','Preliminary']])}</div>
+    </div>
+    <label class="fl">Advanced assessment</label>
+    <div class="cg">${ci('advNeeded','Needed',mini('advType','type / reason','w'))}</div>
+    <label class="fl">Inspection limitations</label>
+    <div class="cg">
+      ${ci('limNone','None')}${ci('limVisibility','Visibility')}${ci('limAccess','Access')}
+      ${ci('limVines','Vines')}${ci('limCollar','Root collar buried')}
+    </div>
+    <input type="text" id="limDesc" placeholder="Describe…" style="margin-top:8px">
+    <label class="fl">Notes</label>
+    <textarea id="notes" placeholder="Notes, sketch description…"></textarea>`;
+
+  buildMatrices();
+}
+
+function buildMatrices(){
+  let m1 = '<tr><th>Failure ↓ / Impact →</th>' + LOI.map(o=>`<th>${o[1]}</th>`).join('') + '</tr>';
+  for(const lof of ['imminent','probable','possible','improbable']){
+    m1 += `<tr><th>${LOF.find(o=>o[0]===lof)[1]}</th>` +
+      ['veryLow','low','medium','high'].map(loi=>`<td data-m1="${lof}_${loi}">${COMB[M1[lof][loi]]}</td>`).join('') + '</tr>';
+  }
+  $('mx1').innerHTML = m1;
+  let m2 = '<tr><th>Likelihood ↓ / Consequences →</th>' + CONS.map(o=>`<th>${o[1]}</th>`).join('') + '</tr>';
+  for(const c of ['veryLikely','likely','somewhat','unlikely']){
+    m2 += `<tr><th>${COMB[c]}</th>` +
+      ['negligible','minor','significant','severe'].map(k=>{const r=M2[c][k];return `<td class="v-${r}" data-m2="${c}_${k}">${RISK[r]}</td>`;}).join('') + '</tr>';
+  }
+  $('mx2').innerHTML = m2;
+}
+</script>
+<script>
+"use strict";
+/* ---------- storage facade (GBU-compatible API) ---------- */
+window.storage = {
+  async list(prefix){ const keys=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(prefix)) keys.push(k); } }catch(e){} return {keys}; },
+  async get(k){ try{ const v=localStorage.getItem(k); return v==null?null:{value:v}; }catch(e){ return null; } },
+  async set(k,v){ localStorage.setItem(k,v); },
+  async delete(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* ---------- interactions ---------- */
+function tc(el,ev){ if(ev && ev.target && ev.target.classList.contains('mini')) return; el.classList.toggle('on'); draft(); }
+function rsel(el){
+  const name = el.dataset.name, was = el.classList.contains('sel');
+  document.querySelectorAll(`.ri[data-name="${name}"]`).forEach(o=>o.classList.remove('sel'));
+  if(!was) el.classList.add('sel');
+  if(name==='unitSys'){ unit = getRadio('unitSys')||'imperial'; applyUnits(); }
+  recalc(); draft();
+}
+function getRadio(name){ const el=document.querySelector(`.ri.sel[data-name="${name}"]`); return el?el.dataset.v:''; }
+function setRadio(name,v){
+  document.querySelectorAll(`.ri[data-name="${name}"]`).forEach(o=>o.classList.toggle('sel',o.dataset.v===v));
+}
+function applyUnits(){
+  const u = UNITS[unit]||UNITS.imperial;
+  document.querySelectorAll('[data-unit]').forEach(s=>s.textContent=u[s.dataset.unit]);
+}
+
+/* ---------- risk calculation ---------- */
+function rowCombined(i){ const f=getRadio(`r${i}_lof`), m=getRadio(`r${i}_loi`); return (f&&m)?M1[f][m]:null; }
+function rowRating(i){ const c=rowCombined(i), k=getRadio(`r${i}_cons`); return (c&&k)?M2[c][k]:null; }
+function setBadge(id,val,map){
+  const el=$(id); if(!el) return;
+  el.className='badge'+(val&&map===RISK?' v-'+val:'');
+  el.textContent = val ? (map[val]||val) : '—';
+  if(map===COMB&&val){ el.classList.add('v-'+({unlikely:'low',somewhat:'moderate',likely:'high',veryLikely:'extreme'}[val])); }
+}
+function overallComputed(){
+  let worst=null;
+  for(let i=1;i<=4;i++){ const r=rowRating(i); if(r&&(worst==null||RISK_ORDER.indexOf(r)>RISK_ORDER.indexOf(worst))) worst=r; }
+  return worst;
+}
+function overallFinal(){ return getRadio('overallOverride') || overallComputed() || null; }
+function recalc(){
+  document.querySelectorAll('[data-m1],[data-m2]').forEach(td=>td.classList.remove('hl'));
+  for(let i=1;i<=4;i++){
+    const c=rowCombined(i), r=rowRating(i);
+    setBadge('comb'+i,c,COMB); setBadge('risk'+i,r,RISK); setBadge('mrisk'+i,r,RISK);
+    const f=getRadio(`r${i}_lof`), m=getRadio(`r${i}_loi`), k=getRadio(`r${i}_cons`);
+    if(f&&m){ const cell=document.querySelector(`[data-m1="${f}_${m}"]`); if(cell) cell.classList.add('hl'); }
+    if(c&&k){ const cell=document.querySelector(`[data-m2="${c}_${k}"]`); if(cell) cell.classList.add('hl'); }
+  }
+  setBadge('overallBadge',overallFinal(),RISK);
+}
+
+/* ---------- collect / load ---------- */
+function collectFD(){
+  const texts={}, checks={}, radios={};
+  document.querySelectorAll('.wrap input:not([type=file]),.wrap textarea').forEach(el=>{ if(el.id) texts[el.id]=el.value; });
+  document.querySelectorAll('[data-key]').forEach(el=>checks[el.dataset.key]=el.classList.contains('on'));
+  const names=new Set(); document.querySelectorAll('.ri').forEach(el=>names.add(el.dataset.name));
+  names.forEach(n=>radios[n]=getRadio(n));
+  return {unit, texts, checks, radios};
+}
+function loadFormData(fd){
+  if(!fd) return;
+  unit = fd.unit||'imperial';
+  for(const id in (fd.texts||{})){ const el=$(id); if(el) el.value=fd.texts[id]; }
+  document.querySelectorAll('[data-key]').forEach(el=>el.classList.toggle('on',!!(fd.checks||{})[el.dataset.key]));
+  for(const n in (fd.radios||{})) setRadio(n,fd.radios[n]);
+  setRadio('unitSys',unit);
+  applyUnits(); recalc();
+}
+function resetForm(){
+  document.querySelectorAll('.wrap input:not([type=file]):not([type=date]),.wrap textarea').forEach(el=>{ if(el.id) el.value=''; });
+  $('datum').value = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('.ri').forEach(el=>el.classList.remove('sel'));
+  document.querySelectorAll('[data-key]').forEach(el=>el.classList.remove('on'));
+  unit='imperial'; setRadio('unitSys','imperial'); applyUnits();
+  photos=[]; renderPhotos(); editId=null; clearSig(); recalc(); goTo(0);
+}
+
+/* ---------- draft autosave ---------- */
+let draftT;
+function draft(){
+  clearTimeout(draftT);
+  draftT = setTimeout(async()=>{
+    try{ await storage.set('traq_draft', JSON.stringify({formData:collectFD(), photos, sig:sigDataURL()})); }catch(e){}
+  }, 500);
+}
+document.addEventListener('input', e=>{ if(e.target.closest('#formView')) draft(); });
+
+/* ---------- navigation ---------- */
+function goTo(n){
+  step = Math.max(0, Math.min(STEPS-1, n));
+  document.querySelectorAll('.sec').forEach((s,i)=>s.classList.toggle('active', i===step));
+  for(let i=0;i<STEPS;i++){ const p=$('p'+i); p.className='s'+(i<step?' done':i===step?' active':''); }
+  $('btnBack').disabled = step===0;
+  $('btnNext').style.display = step===STEPS-1 ? 'none' : 'inline-flex';
+  $('stepLbl').textContent = `Step ${step+1} of ${STEPS}`;
+  if(step===7||step===8) recalc();
+  if(step===STEPS-1){ buildSummary(); setTimeout(resizeSig,50); }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function nav(d){ goTo(step+d); }
+
+/* ---------- toast / dopamin ---------- */
+function toast(msg,type){
+  const t=$('toast'); clearTimeout(toastT);
+  t.className='toast '+(type==='err'?'terr':'tok'); t.textContent=msg;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  toastT=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function showDopamin(){ $('dopamin').classList.add('show'); setTimeout(hideDopamin,3000); }
+function hideDopamin(){ $('dopamin').classList.remove('show'); }
+
+/* ---------- archive ---------- */
+function toggleMode(){
+  const lv=$('listView'), fv=$('formView'), btn=$('modeBtn');
+  if(lv.style.display==='none'){
+    lv.style.display='block'; fv.style.display='none';
+    btn.innerHTML='✏️ Back to form'; loadList();
+  } else {
+    lv.style.display='none'; fv.style.display='block';
+    btn.innerHTML='🗂 Archive <span class="cnt" id="savedCount">0</span>'; updateCount();
+  }
+}
+function newAssessment(){ resetForm(); toggleMode(); }
+async function updateCount(){
+  try{ const r=await storage.list('traq_a_'); const el=$('savedCount'); if(el) el.textContent=r.keys.length; }catch(e){}
+}
+async function loadList(){
+  const c=$('savedListBox');
+  const r=await storage.list('traq_a_');
+  if(!r.keys.length){ c.innerHTML='<div class="empty"><i>🌲</i><br>No assessments saved yet.</div>'; return; }
+  const items=[];
+  for(const k of r.keys){ try{ const d=await storage.get(k); if(d) items.push(JSON.parse(d.value)); }catch(e){} }
+  items.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  c.innerHTML = items.map(a=>{
+    const rr=a.overall; const badge=rr?` · <span class="sb sb-${rr}">${RISK[rr]}</span>`:'';
+    const dt=a.date?new Date(a.date).toLocaleDateString('en-US'):'–';
+    return `<div class="acard"><div class="acinfo"><div class="act">${esc(a.address)||'No location'}</div><div class="acs">${dt} · ${esc(a.species)||'Species unknown'}${badge}</div></div><div class="acbtns"><button class="btn btn-sm" onclick="loadAssessment('${a.id}')" title="Open">✏️</button><button class="btn btn-sm" onclick="exportSaved('${a.id}')" title="PDF">📄</button><button class="btn btn-sm btn-r" onclick="delAssessment('${a.id}')" title="Delete">🗑</button></div></div>`;
+  }).join('');
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+async function delAssessment(id){ await storage.delete('traq_a_'+id); toast('Deleted','ok'); loadList(); updateCount(); }
+async function loadAssessment(id){
+  const r=await storage.get('traq_a_'+id);
+  if(!r){ toast('Not found','err'); return; }
+  const d=JSON.parse(r.value);
+  resetForm();
+  loadFormData(d.formData);
+  photos=d.photos||[]; renderPhotos();
+  if(d.sig) loadSig(d.sig);
+  editId=id;
+  $('listView').style.display='none'; $('formView').style.display='block';
+  $('modeBtn').innerHTML='🗂 Archive <span class="cnt" id="savedCount">0</span>'; updateCount();
+  goTo(STEPS-1); toast('Loaded','ok');
+}
+async function saveAssessment(){
+  const fd=collectFD();
+  const id=editId||String(Date.now());
+  const rec={id, createdAt:new Date().toISOString(), date:fd.texts.datum||'', address:fd.texts.address||'', species:fd.texts.species||'', overall:overallFinal()||'', formData:fd, photos, sig:sigDataURL()};
+  try{
+    await storage.set('traq_a_'+id, JSON.stringify(rec));
+    editId=id; await storage.delete('traq_draft');
+    updateCount(); toast('Saved','ok'); showDopamin();
+  }catch(e){ toast('Storage full — remove photos or delete old assessments','err'); }
+}
+
+/* ---------- photos ---------- */
+function handlePhotos(ev){
+  const files=[...ev.target.files]; ev.target.value='';
+  files.forEach(f=>{
+    const img=new Image(), url=URL.createObjectURL(f);
+    img.onload=()=>{
+      const max=1280, sc=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      photos.push({src:c.toDataURL('image/jpeg',.72),cap:''});
+      URL.revokeObjectURL(url); renderPhotos(); draft();
+    };
+    img.src=url;
+  });
+}
+function renderPhotos(){
+  const g=$('photoGrid'); if(!g) return;
+  g.innerHTML = photos.map((p,i)=>`<div><div class="pt"><img src="${p.src}" alt=""><button class="pdel" onclick="photos.splice(${i},1);renderPhotos();draft()">✕</button></div><input class="pcap" placeholder="Caption…" value="${esc(p.cap)}" oninput="photos[${i}].cap=this.value;draft()"></div>`).join('');
+}
+
+/* ---------- signature ---------- */
+let sigCtx, sigCanvas, sigDrawing=false;
+function initSig(){
+  sigCanvas=$('sigCanvas'); sigCtx=sigCanvas.getContext('2d');
+  resizeSig();
+  const pos=e=>{ const r=sigCanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [(t.clientX-r.left)*(sigCanvas.width/r.width),(t.clientY-r.top)*(sigCanvas.height/r.height)]; };
+  const start=e=>{ e.preventDefault(); sigDrawing=true; sigDirty=true; $('sigHint').style.display='none'; const [x,y]=pos(e); sigCtx.beginPath(); sigCtx.moveTo(x,y); };
+  const move=e=>{ if(!sigDrawing) return; e.preventDefault(); const [x,y]=pos(e); sigCtx.lineTo(x,y); sigCtx.stroke(); };
+  const end=()=>{ sigDrawing=false; draft(); };
+  sigCanvas.addEventListener('pointerdown',start); sigCanvas.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+}
+function resizeSig(){
+  if(!sigCanvas) return;
+  const w=sigCanvas.parentElement.clientWidth||600;
+  const old = sigDirty ? sigCanvas.toDataURL() : null;
+  sigCanvas.width=w*2; sigCanvas.height=240; sigCanvas.style.height='120px';
+  sigCtx.lineWidth=3; sigCtx.lineCap='round'; sigCtx.lineJoin='round';
+  sigCtx.strokeStyle = matchMedia('(prefers-color-scheme:dark)').matches ? '#ECF1EE' : '#101828';
+  if(old){ const im=new Image(); im.onload=()=>sigCtx.drawImage(im,0,0,sigCanvas.width,sigCanvas.height); im.src=old; }
+}
+function clearSig(){ if(!sigCtx) return; sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height); sigDirty=false; const h=$('sigHint'); if(h) h.style.display='block'; }
+function sigDataURL(){ return sigDirty ? sigCanvas.toDataURL('image/png') : null; }
+function loadSig(dataUrl){ if(!dataUrl) return; const im=new Image(); im.onload=()=>{ sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height); sigCtx.drawImage(im,0,0,sigCanvas.width,sigCanvas.height); sigDirty=true; $('sigHint').style.display='none'; }; im.src=dataUrl; }
+
+/* ---------- GPS / OSM ---------- */
+async function getGPS(){
+  const btn=$('gpsBtn');
+  if(!navigator.geolocation){ toast('GPS not available','err'); return; }
+  btn.textContent='…'; btn.disabled=true;
+  const done=()=>{ btn.textContent='📡 GPS'; btn.disabled=false; };
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const {latitude:lat,longitude:lon}=pos.coords;
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,{headers:{'Accept-Language':'en'}});
+      const d=await r.json();
+      if(d.address){
+        const a=d.address;
+        const road=(a.road||'')+(a.house_number?' '+a.house_number:'');
+        const city=a.city||a.town||a.village||a.suburb||'';
+        $('address').value=[road,city].filter(Boolean).join(', ')||d.display_name;
+        draft();
+      } else toast('Address not found','err');
+    }catch(e){ toast('Could not look up address','err'); }
+    done();
+  },()=>{ toast('GPS access denied','err'); done(); },{timeout:10000});
+}
+async function osmSearch(q){
+  clearTimeout(osmT);
+  const list=$('ac-list');
+  if(!q||q.length<3){ list.classList.remove('show'); return; }
+  osmT=setTimeout(async()=>{
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`,{headers:{'Accept-Language':'en'}});
+      const data=await r.json();
+      if(!data.length){ list.classList.remove('show'); return; }
+      list.innerHTML=data.map(d=>`<div class="ac-item" onclick="selectPlace('${d.display_name.replace(/'/g,"\\'")}')">${esc(d.display_name)}</div>`).join('');
+      list.classList.add('show');
+    }catch(e){ list.classList.remove('show'); }
+  },400);
+}
+function selectPlace(name){ $('address').value=name; $('ac-list').classList.remove('show'); draft(); }
+document.addEventListener('click',e=>{ if(!e.target.closest('.ac-wrap')) $('ac-list').classList.remove('show'); });
+
+/* ---------- summary ---------- */
+function buildSummary(){
+  const fd=collectFD(); const t=fd.texts; const u=UNITS[unit];
+  const ov=overallFinal();
+  const rows=[];
+  for(let i=1;i<=4;i++){
+    const r=rowRating(i);
+    if(!r && !t['r'+i+'_cond']) continue;
+    rows.push(`<div class="sr"><span class="sk">#${t['r'+i+'_target']||i} ${esc(t['r'+i+'_cond'])||'—'}</span><span class="sv"><span class="sb sb-${r||'low'}">${r?RISK[r]:'—'}</span></span></div>`);
+  }
+  const kv=(k,v)=>v?`<div class="sr"><span class="sk">${k}</span><span class="sv">${esc(v)}</span></div>`:'';
+  $('summaryContent').innerHTML = `
+    <div class="sc">
+      ${kv('Client',t.client)}${kv('Location',t.address)}${kv('Date',t.datum)}
+      ${kv('Species',t.species)}${kv('Tree #',t.treeNo)}
+      ${kv('DBH',t.dbh?t.dbh+' '+u.dbh:'')}${kv('Height',t.height?t.height+' '+u.ht:'')}
+      ${kv('Time frame',t.timeframe)}
+    </div>
+    <div class="st">Risk ratings</div>
+    <div class="sc">${rows.join('')||'<div class="sr"><span class="sk">No assessments entered</span></div>'}
+      <div class="sr"><span class="sk"><b>Overall tree risk rating</b></span><span class="sv">${ov?`<span class="sb sb-${ov}">${RISK[ov]}</span>`:'—'}</span></div>
+    </div>
+    ${t.notes?`<div class="st">Notes</div><div class="sc"><div style="font-size:13px">${esc(t.notes)}</div></div>`:''}
+    <div class="st">Photos: ${photos.length}</div>`;
+}
+
+/* ---------- print / PDF ---------- */
+const CHECK_LABELS = {}; /* filled at init from DOM */
+function harvestLabels(){
+  document.querySelectorAll('.ci[data-key]').forEach(el=>{
+    CHECK_LABELS[el.dataset.key]=el.querySelector('.clbl').childNodes[0].textContent.trim();
+  });
+}
+function tags(keys,checks,texts){
+  const out=[];
+  keys.forEach(k=>{ if(checks[k]) out.push(`<span class="pd-tag">${esc(CHECK_LABELS[k]||k)}</span>`); });
+  return out.length?`<div class="pd-tags">${out.join('')}</div>`:'<div class="pd-tags" style="color:#888">— none noted —</div>';
+}
+function keysWithPrefix(p){ return Object.keys(CHECK_LABELS).filter(k=>k.startsWith(p)); }
+function buildPrintView(){
+  const fd=collectFD(); const t=fd.texts, ch=fd.checks, rd=fd.radios; const u=UNITS[fd.unit||'imperial'];
+  const ov=overallFinal();
+  const lofL=v=>v?(LOF.find(o=>o[0]===v)||[])[1]||v:'—';
+  const loiL=v=>v?(LOI.find(o=>o[0]===v)||[])[1]||v:'—';
+  const consL=v=>v?(CONS.find(o=>o[0]===v)||[])[1]||v:'—';
+  let riskRows='';
+  for(let i=1;i<=4;i++){
+    const c=rowCombined(i), r=rowRating(i);
+    if(!r&&!t['r'+i+'_cond']&&!rd['r'+i+'_lof']) continue;
+    riskRows+=`<tr><td>${esc(t['r'+i+'_target'])||i}</td><td>${rd['r'+i+'_part']||'—'}</td><td>${esc(t['r'+i+'_cond'])||'—'}</td><td>${lofL(rd['r'+i+'_lof'])}</td><td>${loiL(rd['r'+i+'_loi'])}</td><td>${c?COMB[c]:'—'}</td><td>${consL(rd['r'+i+'_cons'])}</td><td><b>${r?RISK[r]:'—'}</b></td><td>${esc(t['r'+i+'_mit'])||'—'}</td><td>${rd['r'+i+'_res']?RISK[rd['r'+i+'_res']]:'—'}</td></tr>`;
+  }
+  let targetRows='';
+  for(let i=1;i<=4;i++){
+    if(!t['t'+i+'_desc']) continue;
+    const zone={dripline:'drip line','1x':'1× ht','1_5x':'1.5× ht'}[rd['t'+i+'_zone']]||'—';
+    targetRows+=`<tr><td>${i}</td><td>${esc(t['t'+i+'_desc'])}</td><td>${zone}</td><td>${rd['t'+i+'_occ']||'—'}</td><td>${rd['t'+i+'_move']||'—'}</td><td>${rd['t'+i+'_restrict']||'—'}</td></tr>`;
+  }
+  const sig=sigDataURL();
+  $('printDoc').innerHTML=`
+    <h1>Tree Risk Assessment</h1>
+    <div class="pd-sub">Based on the ISA TRAQ Basic methodology · ${esc(t.datum)||''} ${esc(t.zeit)||''} · Sheet ${esc(t.sheet)||'1'} of ${esc(t.sheetOf)||'1'}</div>
+    <div class="pd-block"><div class="pd-kv">
+      <div><b>Client:</b> ${esc(t.client)||'—'}</div><div><b>Location:</b> ${esc(t.address)||'—'}</div><div><b>Assessor(s):</b> ${esc(t.assessor)||'—'}</div>
+      <div><b>Species:</b> ${esc(t.species)||'—'}</div><div><b>Tree #:</b> ${esc(t.treeNo)||'—'}</div><div><b>Time frame:</b> ${esc(t.timeframe)||'—'}</div>
+      <div><b>DBH:</b> ${t.dbh?esc(t.dbh)+' '+u.dbh:'—'}</div><div><b>Height:</b> ${t.height?esc(t.height)+' '+u.ht:'—'}</div><div><b>Crown spread:</b> ${t.crown?esc(t.crown)+' '+u.ht:'—'}</div>
+      <div><b>Tools:</b> ${esc(t.tools)||'—'}</div><div><b>Data:</b> ${rd.dataStatus||'—'}</div><div><b>Insp. interval:</b> ${esc(t.interval)||'—'}</div>
+    </div></div>
+    ${targetRows?`<div class="pd-block"><h3>Targets</h3><table><tr><th>#</th><th>Description</th><th>Zone</th><th>Occupancy</th><th>Move?</th><th>Restrict?</th></tr>${targetRows}</table></div>`:''}
+    <div class="pd-block"><h3>Site factors</h3>${tags([...keysWithPrefix('topo'),...keysWithPrefix('sc'),...keysWithPrefix('soil'),...keysWithPrefix('wx')],ch,t)}
+      ${t.history?`<div class="pd-tags"><b>History:</b> ${esc(t.history)}</div>`:''}${t.windDir?`<div class="pd-tags"><b>Wind:</b> ${esc(t.windDir)}</div>`:''}</div>
+    <div class="pd-block"><h3>Health &amp; load</h3>${tags([...keysWithPrefix('fol'),...keysWithPrefix('prof'),'vines'],ch,t)}
+      <div class="pd-tags"><b>Vigor:</b> ${rd.vigor||'—'} · <b>Wind exposure:</b> ${rd.windExp||'—'} · <b>Crown size:</b> ${rd.crownSize||'—'} · <b>Density:</b> ${rd.crownDensity||'—'}</div></div>
+    <div class="pd-block"><h3>Crown &amp; branches</h3>${tags([...keysWithPrefix('b_'),...keysWithPrefix('pr_')],ch,t)}
+      ${t.b_concern?`<div class="pd-tags"><b>Main concern:</b> ${esc(t.b_concern)}</div>`:''}<div class="pd-tags"><b>Load on defect:</b> ${rd.b_load||'—'} · <b>Likelihood of failure:</b> ${lofL(rd.b_lof)}</div></div>
+    <div class="pd-block"><h3>Trunk</h3>${tags(keysWithPrefix('tr_'),ch,t)}
+      ${t.tr_concern?`<div class="pd-tags"><b>Main concern:</b> ${esc(t.tr_concern)}</div>`:''}<div class="pd-tags"><b>Load on defect:</b> ${rd.tr_load||'—'} · <b>Likelihood of failure:</b> ${lofL(rd.tr_lof)}</div></div>
+    <div class="pd-block"><h3>Roots &amp; root collar</h3>${tags(keysWithPrefix('r_').filter(k=>!/^r\d/.test(k)),ch,t)}
+      ${t.r_concern?`<div class="pd-tags"><b>Main concern:</b> ${esc(t.r_concern)}</div>`:''}<div class="pd-tags"><b>Load on defect:</b> ${rd.r_load||'—'} · <b>Likelihood of failure:</b> ${lofL(rd.r_lof)}</div></div>
+    <div class="pd-block"><h3>Risk categorization</h3>
+      ${riskRows?`<table><tr><th>Target</th><th>Part</th><th>Condition</th><th>Failure</th><th>Impact</th><th>Fail &amp; impact</th><th>Consequences</th><th>Risk</th><th>Mitigation</th><th>Residual</th></tr>${riskRows}</table>`:'<div class="pd-tags">— none —</div>'}
+      <div class="pd-risk">Overall tree risk rating: ${ov?RISK[ov].toUpperCase():'—'}</div>
+      <div class="pd-tags" style="margin-top:4px"><b>Overall residual risk:</b> ${rd.overallRes?RISK[rd.overallRes]:'—'} · <b>Work priority:</b> ${rd.priority||'—'} · <b>Advanced assessment:</b> ${ch.advNeeded?('Yes'+(t.advType?' — '+esc(t.advType):'')):'No'}</div>
+      <div class="pd-tags"><b>Limitations:</b> ${['limNone','limVisibility','limAccess','limVines','limCollar'].filter(k=>ch[k]).map(k=>CHECK_LABELS[k]).join(', ')||'—'} ${t.limDesc?'· '+esc(t.limDesc):''}</div>
+      ${t.notes?`<div class="pd-tags"><b>Notes:</b> ${esc(t.notes)}</div>`:''}</div>
+    ${photos.length?`<div class="pd-block"><h3>Photos</h3><div class="pd-photos">${photos.map(p=>`<figure><img src="${p.src}"><figcaption>${esc(p.cap)}</figcaption></figure>`).join('')}</div></div>`:''}
+    <div class="pd-block pd-sig"><h3>Sign-off</h3>
+      <div class="pd-tags"><b>Assessor:</b> ${esc(t.verantwortlicher)||'—'} · <b>Date:</b> ${esc(t.datum)||'—'}</div>
+      ${sig?`<img src="${sig}" alt="signature">`:''}
+      <div style="font-size:8px;color:#666;margin-top:6px">Created with the Tree Risk Assessment app · ropesconnectingpeople.com · Not an official ISA product.</div></div>`;
+}
+function exportPDF(){ buildPrintView(); window.print(); }
+async function exportSaved(id){
+  const r=await storage.get('traq_a_'+id); if(!r) return;
+  const d=JSON.parse(r.value);
+  resetForm(); loadFormData(d.formData); photos=d.photos||[]; renderPhotos(); if(d.sig) loadSig(d.sig); editId=id;
+  setTimeout(()=>{ buildPrintView(); window.print(); },200);
+}
+function shareAssessment(){
+  const fd=collectFD(); const t=fd.texts; const ov=overallFinal();
+  const txt=`Tree Risk Assessment\n${t.address||''} · ${t.datum||''}\nSpecies: ${t.species||'—'}  Tree #: ${t.treeNo||'—'}\nOverall risk rating: ${ov?RISK[ov]:'—'}\nAssessor: ${t.assessor||t.verantwortlicher||'—'}`;
+  if(navigator.share){ navigator.share({title:'Tree Risk Assessment',text:txt}).catch(()=>{}); }
+  else { navigator.clipboard&&navigator.clipboard.writeText(txt); toast('Summary copied to clipboard','ok'); }
+}
+
+/* ---------- init ---------- */
+async function init(){
+  buildSteps();
+  harvestLabels();
+  $('datum').value=new Date().toISOString().split('T')[0];
+  setRadio('unitSys','imperial'); applyUnits();
+  initSig();
+  await updateCount();
+  try{
+    const d=await storage.get('traq_draft');
+    if(d){ const dd=JSON.parse(d.value); loadFormData(dd.formData); photos=dd.photos||[]; renderPhotos(); if(dd.sig) loadSig(dd.sig); }
+  }catch(e){}
+  recalc();
+  window.addEventListener('resize',()=>{ if(step===STEPS-1) resizeSig(); });
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+}
+init();
+</script>
+</body>
+</html>
