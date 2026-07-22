@@ -1,4 +1,4 @@
-const CACHE = 'traq-v1.0';
+const CACHE = 'traq-v1.1';
 const ASSETS = [
   './',
   './index.html',
