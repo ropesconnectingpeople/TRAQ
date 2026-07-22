@@ -1,4 +1,4 @@
-const CACHE = 'traq-v1.2';
+const CACHE = 'traq-v1.3';
 const ASSETS = [
   './',
   './index.html',
@@ -19,8 +19,24 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Network-first for pages: always try to load the newest version,
+// fall back to cache when offline.
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+  if (e.request.mode === 'navigate' || e.request.url.endsWith('index.html')) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }).catch(() => caches.match(e.request).then(m => m || caches.match('./index.html')))
+    );
+  } else {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return res;
+      }))
+    );
+  }
 });
