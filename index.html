@@ -382,11 +382,8 @@ function buildSteps(){
       </div>
       <div class="ac-list" id="ac-list"></div>
     </div>
-    <label class="fl">what3words</label>
-    <div style="display:flex;gap:6px">
-      <input type="text" id="w3w" placeholder="///index.home.raft" autocomplete="off" style="flex:1">
-      <button class="btn" id="w3wBtn" onclick="getW3W()" title="Get what3words address for my location" style="flex-shrink:0;padding:7px 10px">/// w3w</button>
-    </div>
+    <label class="fl">GPS coordinates</label>
+    <input type="text" id="coords" placeholder="tap GPS above — works offline too" autocomplete="off">
     <div class="r2" style="margin-top:.75rem">
       <div><label class="fl">Time</label><input type="time" id="zeit"></div>
       <div><label class="fl">Time frame</label><input type="text" id="timeframe" placeholder="e.g. 3 years"></div>
@@ -863,8 +860,10 @@ async function getGPS(){
   btn.textContent='…'; btn.disabled=true;
   const done=()=>{ btn.textContent='📡 GPS'; btn.disabled=false; };
   navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude:lat,longitude:lon}=pos.coords;
+    $('coords').value=lat.toFixed(6)+', '+lon.toFixed(6);
+    draft();
     try{
-      const {latitude:lat,longitude:lon}=pos.coords;
       const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,{headers:{'Accept-Language':'en'}});
       const d=await r.json();
       if(d.address){
@@ -873,26 +872,8 @@ async function getGPS(){
         const city=a.city||a.town||a.village||a.suburb||'';
         $('address').value=[road,city].filter(Boolean).join(', ')||d.display_name;
         draft();
-      } else toast('Address not found','err');
-    }catch(e){ toast('Could not look up address','err'); }
-    done();
-  },()=>{ toast('GPS access denied','err'); done(); },{timeout:10000});
-}
-const W3W_KEY = (typeof localStorage!=='undefined' && localStorage.getItem('w3w_key')) || 'T9ZZL4A8';
-async function getW3W(){
-  const btn=$('w3wBtn');
-  if(!navigator.geolocation){ toast('GPS not available','err'); return; }
-  if(!W3W_KEY){ toast('what3words API key missing — see README','err'); return; }
-  btn.textContent='…'; btn.disabled=true;
-  const done=()=>{ btn.textContent='/// w3w'; btn.disabled=false; };
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    try{
-      const {latitude:lat,longitude:lon}=pos.coords;
-      const r=await fetch(`https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat}%2C${lon}&language=en&key=${W3W_KEY}`);
-      const d=await r.json();
-      if(d.words){ $('w3w').value='///'+d.words; draft(); }
-      else toast((d.error&&d.error.message)||'what3words lookup failed','err');
-    }catch(e){ toast('what3words lookup failed','err'); }
+      }
+    }catch(e){ toast('Coordinates saved — address lookup needs internet','ok'); }
     done();
   },()=>{ toast('GPS access denied','err'); done(); },{timeout:10000});
 }
@@ -926,7 +907,7 @@ function buildSummary(){
   const kv=(k,v)=>v?`<div class="sr"><span class="sk">${k}</span><span class="sv">${esc(v)}</span></div>`:'';
   $('summaryContent').innerHTML = `
     <div class="sc">
-      ${kv('Client',t.client)}${kv('Location',t.address)}${kv('what3words',t.w3w)}${kv('Date',t.datum)}
+      ${kv('Client',t.client)}${kv('Location',t.address)}${kv('Coordinates',t.coords)}${kv('Date',t.datum)}
       ${kv('Species',t.species)}${kv('Tree #',t.treeNo)}
       ${kv('DBH',t.dbh?t.dbh+' '+u.dbh:'')}${kv('Height',t.height?t.height+' '+u.ht:'')}
       ${kv('Time frame',t.timeframe)}
@@ -975,7 +956,7 @@ function buildPrintView(){
     <h1>Tree Risk Assessment</h1>
     <div class="pd-sub">Based on the ISA TRAQ Basic methodology · ${esc(t.datum)||''} ${esc(t.zeit)||''} · Sheet ${esc(t.sheet)||'1'} of ${esc(t.sheetOf)||'1'}</div>
     <div class="pd-block"><div class="pd-kv">
-      <div><b>Client:</b> ${esc(t.client)||'—'}</div><div><b>Location:</b> ${esc(t.address)||'—'}${t.w3w?' · '+esc(t.w3w):''}</div><div><b>Assessor(s):</b> ${esc(t.assessor)||'—'}</div>
+      <div><b>Client:</b> ${esc(t.client)||'—'}</div><div><b>Location:</b> ${esc(t.address)||'—'}${t.coords?' · '+esc(t.coords):''}</div><div><b>Assessor(s):</b> ${esc(t.assessor)||'—'}</div>
       <div><b>Species:</b> ${esc(t.species)||'—'}</div><div><b>Tree #:</b> ${esc(t.treeNo)||'—'}</div><div><b>Time frame:</b> ${esc(t.timeframe)||'—'}</div>
       <div><b>DBH:</b> ${t.dbh?esc(t.dbh)+' '+u.dbh:'—'}</div><div><b>Height:</b> ${t.height?esc(t.height)+' '+u.ht:'—'}</div><div><b>Crown spread:</b> ${t.crown?esc(t.crown)+' '+u.ht:'—'}</div>
       <div><b>Tools:</b> ${esc(t.tools)||'—'}</div><div><b>Data:</b> ${rd.dataStatus||'—'}</div><div><b>Insp. interval:</b> ${esc(t.interval)||'—'}</div>
@@ -1012,7 +993,7 @@ async function exportSaved(id){
 }
 function shareAssessment(){
   const fd=collectFD(); const t=fd.texts; const ov=overallFinal();
-  const txt=`Tree Risk Assessment\n${t.address||''}${t.w3w?' · '+t.w3w:''} · ${t.datum||''}\nSpecies: ${t.species||'—'}  Tree #: ${t.treeNo||'—'}\nOverall risk rating: ${ov?RISK[ov]:'—'}\nAssessor: ${t.assessor||t.verantwortlicher||'—'}`;
+  const txt=`Tree Risk Assessment\n${t.address||''}${t.coords?' ('+t.coords+')':''} · ${t.datum||''}\nSpecies: ${t.species||'—'}  Tree #: ${t.treeNo||'—'}\nOverall risk rating: ${ov?RISK[ov]:'—'}\nAssessor: ${t.assessor||t.verantwortlicher||'—'}`;
   if(navigator.share){ navigator.share({title:'Tree Risk Assessment',text:txt}).catch(()=>{}); }
   else { navigator.clipboard&&navigator.clipboard.writeText(txt); toast('Summary copied to clipboard','ok'); }
 }

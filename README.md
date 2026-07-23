@@ -7,7 +7,7 @@ Digital tree risk assessment based on the ISA TRAQ Basic methodology — free, w
 - ✅ Full TRAQ Basic workflow: targets, site factors, health & load, defects (crown / trunk / roots)
 - 🧮 Automatic risk matrices: likelihood of failure × impact → risk rating, overall rating auto-derived
 - 📏 Imperial (in/ft) and metric (cm/m) units
-- 📍 GPS address lookup and what3words location (///word.word.word)
+- 📍 GPS button: address lookup (online) + exact coordinates (works offline)
 - 📸 Photos with captions
 - ✍️ On-screen signature
 - 📄 PDF export — clean, sign-off ready
@@ -20,12 +20,6 @@ Digital tree risk assessment based on the ISA TRAQ Basic methodology — free, w
 **iPhone (Safari):** open the page → Share button → "Add to Home Screen"
 
 **Android (Chrome):** open the page → three-dot menu → "Install app"
-
-## what3words setup
-
-The /// w3w button needs a free API key from https://developer.what3words.com (free plan).
-Either replace `W3W_KEY` in index.html, or open the app once and run this in the browser console:
-`localStorage.setItem('w3w_key','YOUR_KEY')`
 
 ## Hosting
 
